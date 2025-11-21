@@ -30,7 +30,7 @@ ${query}
 - 正確に
 - 誇張せず
 - 情報がなければ「記載なし」と回答
-`.trim();
+  `.trim();
 
   try {
     const resp = await fetch("https://api.openai.com/v1/responses", {
@@ -47,14 +47,22 @@ ${query}
 
     const data = await resp.json();
 
+    // ★ デバッグ用：OpenAI 側のエラーをそのまま返す
+    if (!resp.ok) {
+      console.error("OpenAI error:", data);
+      return res
+        .status(resp.status)
+        .json({ error: data.error?.message || JSON.stringify(data) });
+    }
+
     const answer =
       data.output_text ||
       data.choices?.[0]?.message?.content ||
-      "すみません、すみません、回答を生成できませんでした。";
+      "すみません２、うまく回答を生成できませんでした。";
 
-    res.status(200).json({ answer });
+    return res.status(200).json({ answer });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "OpenAI request failed" });
+    console.error("Request failed:", e);
+    return res.status(500).json({ error: "OpenAI request failed" });
   }
 };
