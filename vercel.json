@@ -1,0 +1,9 @@
+cd C:\kita\dev\202_catalog_bot
+
+@"
+{
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ]
+}
+"@ | Set-Content vercel.json
