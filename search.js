@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const filePath = path.join(process.cwd(), "public", "products.jsonl");
+    const filePath = path.join(process.cwd(), "public", "data.jsonl");
     const raw = fs.readFileSync(filePath, "utf8");
     const lines = raw.trim().split("\n");
 
