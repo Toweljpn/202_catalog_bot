@@ -44,13 +44,13 @@
           });
           const data = await chatResp.json();
 
-          if (data.answer) {
-            out.textContent = data.answer;
-          } else if (data.error) {
-            out.textContent = "エラー: " + data.error;
-          } else {
-            out.textContent = JSON.stringify(data, null, 2);
-          }
+if (data.answer) {
+  out.textContent = data.answer;
+} else if (data.error) {
+  out.textContent = "APIエラー: " + data.error;
+} else {
+  out.textContent = JSON.stringify(data, null, 2);
+}
         } catch (e) {
           console.error(e);
           out.textContent = "通信エラーが発生しました。";
