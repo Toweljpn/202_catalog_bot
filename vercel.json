@@ -1,9 +1,7 @@
-cd C:\kita\dev\202_catalog_bot
-
-@"
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/", "destination": "/index.html" }
   ]
 }
-"@ | Set-Content vercel.json
