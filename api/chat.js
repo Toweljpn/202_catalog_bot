@@ -50,7 +50,7 @@ ${query}
     const answer =
       data.output_text ||
       data.choices?.[0]?.message?.content ||
-      "すみません、回答を生成できませんでした。";
+      "すみません、すみません、回答を生成できませんでした。";
 
     res.status(200).json({ answer });
   } catch (e) {
