@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>製品説明チャットボット（試作）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="font-family: system-ui, sans-serif; max-width: 720px; margin: 20px auto; padding: 16px;">
+    <h2>製品説明チャットボット（試作）</h2>
+    <p>商品について知りたいことを入力してください。</p>
+
+    <input
+      id="q"
+      style="width: 100%; padding: 8px; margin-top: 8px;"
+      placeholder="例）コンパクトに飾れる木目込みの雛人形はありますか？"
+    />
+    <button style="margin-top: 8px; padding: 6px 12px;" onclick="ask()">
+      送信
+    </button>
+
+    <h3 style="margin-top: 24px;">回答</h3>
+    <div id="out" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 12px; min-height: 80px;"></div>
+
+    <script>
+      async function ask() {
+        const q = document.getElementById("q").value;
+        const out = document.getElementById("out");
+        out.textContent = "検索中 & 回答生成中…";
+
+        try {
+          // ① 検索
+          const searchResp = await fetch("/api/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: q }),
+          });
+          const { results } = await searchResp.json();
+
+          // ② 回答生成
+          const chatResp = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: q, contexts: results }),
+          });
+          const data = await chatResp.json();
+
+          if (data.answer) {
+            out.textContent = data.answer;
+          } else if (data.error) {
+            out.textContent = "エラー: " + data.error;
+          } else {
+            out.textContent = JSON.stringify(data, null, 2);
+          }
+        } catch (e) {
+          console.error(e);
+          out.textContent = "通信エラーが発生しました。";
+        }
+      }
+    </script>
+  </body>
+</html>

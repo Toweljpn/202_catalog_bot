@@ -1,37 +1,64 @@
-export const config = {
-  runtime: "edge",
-};
+module.exports = async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
 
-export default async function handler(req) {
-  const { query, contexts } = await req.json();
+  const { query, contexts } = req.body || {};
+  if (!query) {
+    res.status(400).json({ error: "query is required" });
+    return;
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: "OPENAI_API_KEY is not set" });
+    return;
+  }
+
+  const contextText = (contexts || [])
+    .map(
+      (c, i) => `(${i + 1}) ${c.title || ""}\n${c.body || c.description || ""}`
+    )
+    .join("\n\n");
 
   const prompt = `
-あなたは日本の節句人形に詳しい販売員です。
-次の製品説明文を参考にしながら、質問に答えてください。
+あなたは日本の節句人形やインテリア商品に詳しい販売スタッフです。
+次の製品説明文を参考にしながら、ユーザーの質問に答えてください。
 
-【検索結果】
-${contexts.map((c, i) => `(${i+1}) ${c.title}\n${c.body}`).join("\n\n")}
+【参考となる説明文】
+${contextText || "（該当データなし）"}
 
-【質問】
+【ユーザーの質問】
 ${query}
 
-顧客に安心感を与え、正確に、簡潔に答えてください。
-  `;
+条件:
+- わかりやすく、専門用語は簡単に補足する
+- 誇張はせず、説明文に書かれていないことは推測で断定しない
+- 必要なら「この情報からはわかりません」と正直に伝える
+  `.trim();
 
-  const resp = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      input: prompt,
-    }),
-  });
+  try {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
 
-  const data = await resp.json();
-  return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json" },
-  });
-}
+    const data = await resp.json();
+    const answer =
+      data.choices?.[0]?.message?.content?.trim() ||
+      "すみません、うまく回答を生成できませんでした。";
+
+    res.status(200).json({ answer });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "failed to call OpenAI API" });
+  }
+};
