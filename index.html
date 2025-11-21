@@ -21,41 +21,58 @@
     <h3 style="margin-top: 24px;">回答</h3>
     <div id="out" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 12px; min-height: 80px;"></div>
 
-    <script>
-      async function ask() {
-        const q = document.getElementById("q").value;
-        const out = document.getElementById("out");
-        out.textContent = "検索中 & 回答生成中…";
+<script>
+  async function ask() {
+    const input = document.getElementById("q");
+    const query = input.value.trim();
+    const out = document.getElementById("out");
 
-        try {
-          // ① 検索
-          const searchResp = await fetch("/api/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: q }),
-          });
-          const { results } = await searchResp.json();
+    if (!query) {
+      out.textContent = "質問を入力してください。";
+      return;
+    }
 
-          // ② 回答生成
-          const chatResp = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: q, contexts: results }),
-          });
-          const data = await chatResp.json();
+    out.textContent = "検索中 & 回答生成中…";
 
-if (data.answer) {
-  out.textContent = data.answer;
-} else if (data.error) {
-  out.textContent = "APIエラー: " + data.error;
-} else {
-  out.textContent = JSON.stringify(data, null, 2);
-}
-        } catch (e) {
-          console.error(e);
-          out.textContent = "通信エラーが発生しました。";
-        }
+    try {
+      // ① 検索API
+      const searchResp = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query }),  // ← ここが重要
+      });
+      const searchData = await searchResp.json();
+
+      if (!searchResp.ok) {
+        out.textContent =
+          "検索エラー: " + (searchData.error || searchResp.status);
+        return;
       }
-    </script>
+
+      // ② 回答生成API
+      const chatResp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: query,                 // ← ここも必ず入れる
+          contexts: searchData.results || [],
+        }),
+      });
+      const chatData = await chatResp.json();
+
+      if (!chatResp.ok) {
+        out.textContent =
+          "APIエラー: " + (chatData.error || chatResp.status);
+        return;
+      }
+
+      out.textContent =
+        chatData.answer || JSON.stringify(chatData, null, 2);
+    } catch (e) {
+      console.error(e);
+      out.textContent = "通信エラー: " + e.message;
+    }
+  }
+</script>
   </body>
 </html>
